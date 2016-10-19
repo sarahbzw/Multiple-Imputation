@@ -58,6 +58,11 @@ Ye$per_capita_exp_cat[Ye$per_capita_exp<=54.99&Ye$per_capita_exp>=45] <- "$45-$5
 Ye$per_capita_exp_cat[Ye$per_capita_exp>=55] <- '$55+'
 
 
+#recode mean% revenues 
+Ye$localrev <- profile2013_core$c3q17p/profile2013_core$c3q16
+Ye$Medicaidrev<-profile2013_core$c3q17r/profile2013_core$c3q16
+Ye$Federalrev<-profile2013_core$c3q17qe/profile2013_core$c3q16
+
 #recode weight variable
 Ye$weight01 <- profile2013_core$c0coreweight_s
 Ye$weight02 <- profile2013_core$c0coreweight_p
@@ -93,3 +98,12 @@ prop.table(svytable(~addNA(total_exp)+addNA(budget),  exclude=NULL, na.action=na
 # this is close to the table in paper
 # prop.table(table(Ye_1$BOH_1, Ye_1$budget, useNA = c("always")),2)
 
+#means compared to paper
+mean(Ye_1$localrev[Ye_1$budget=="with budget cuts"], na.rm=T)
+mean(Ye_1$localrev[Ye_1$budget=="without budget cuts"], na.rm=T)
+
+mean(Ye_1$Medicaidrev[Ye_1$budget=="with budget cuts"], na.rm=T)
+mean(Ye_1$Medicaidrev[Ye_1$budget=="without budget cuts"], na.rm=T)
+
+mean(Ye_1$Federalrev[Ye_1$budget=="with budget cuts"], na.rm=T)
+mean(Ye_1$Federalrev[Ye_1$budget=="without budget cuts"], na.rm=T)
