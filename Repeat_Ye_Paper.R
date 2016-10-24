@@ -129,3 +129,13 @@ wtd.mean(Ye_1$Federalrev[Ye_1$budget=="without budget cuts"],
          weights=Ye_1$weights01,
          normwt="ignored",
          na.rm=T)
+
+#model 1 logistic regression
+
+library(stats)
+model1 <- glm(budget ~ population + governance_type + BOH_0 + BOH_1 + BOH_2 + BOH_3 + BOH_4 + BOH_5 + BOH_6 + BOH_7 + BOH_8 + BOH_9,
+              data=Ye_1, family="binomial", 
+              weights=Ye_1$weights02,
+              na.action="na.omit")
+summary(model1)
+exp(cbind(OR=coef(model1), confint(model1)))
