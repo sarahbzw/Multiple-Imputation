@@ -100,6 +100,7 @@ prop.table(svytable(~addNA(total_exp)+addNA(budget),  exclude=NULL, na.action=na
 
 #means compared to paper
 library(questionr)
+Ye_1 <- subset(Ye,is.na(Ye$budget)==F)
 wtd.mean(Ye_1$localrev[Ye_1$budget=="with budget cuts"],
          weights=Ye_1$weights02,
          normwt="ignored",
@@ -132,6 +133,16 @@ wtd.mean(Ye_1$Federalrev[Ye_1$budget=="without budget cuts"],
 
 #model 1 logistic regression
 
+#subset data to exclude NAs, n=1874#
+Ye_1<-subset(Ye, 
+             !(is.na(Ye$budget)|
+                 is.na(Ye$governance_type)|
+                 is.na(Ye$BOH_0)))
+
+#relevel budget#
+Ye_1$budget <- relevel(Ye_1$budget, ref="without budget cuts")
+
+#logistic regression
 library(stats)
 model1 <- glm(budget ~ population + governance_type + BOH_0 + BOH_1 + BOH_2 + BOH_3 + BOH_4 + BOH_5 + BOH_6 + BOH_7 + BOH_8 + BOH_9,
               data=Ye_1, family="binomial", 
