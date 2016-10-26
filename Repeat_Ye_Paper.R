@@ -35,10 +35,10 @@ Ye$BOH_6 <- profile2013_core$c2q11a
 Ye$BOH_7 <- profile2013_core$c2q14a
 Ye$BOH_8 <- profile2013_core$c2q15a
 Ye$BOH_9 <- ifelse((profile2013_core$c6q75a=='checked'|
-                     profile2013_core$c6q76a=='checked'|
-                     profile2013_core$c6q77a=='checked'|
-                     profile2013_core$c6q78a=='checked'|
-                     profile2013_core$c6q79a=='checked')==T,'checked','unchecked')
+                      profile2013_core$c6q76a=='checked'|
+                      profile2013_core$c6q77a=='checked'|
+                      profile2013_core$c6q78a=='checked'|
+                      profile2013_core$c6q79a=='checked')==T,'checked','unchecked')
 
 #recode total expenditures
 Ye$total_exp <- recode(profile2013_core$c3q15, 
@@ -71,30 +71,31 @@ Ye$weight02 <- profile2013_core$c0coreweight_p
 Ye <- as.data.frame(Ye)
 
 #subset non-missing in weight
-Ye_1 <- subset(Ye,is.na(Ye$weight01)==F)
-Ye_2 <- subset(Ye,is.na(Ye$weight02)==F)
+#Ye_1 <- subset(Ye,is.na(Ye$weight01)==F)
+#Ye_2 <- subset(Ye,is.na(Ye$weight02)==F)
 
 #weight
-library(survey)
-Ye_1 <- svydesign(ids = ~1, data = Ye_1, weights = Ye_1$weight01)
-Ye_2 <- svydesign(ids = ~1, data = Ye_2, weights = Ye_2$weight02)
-  
+#library(survey)
+#Ye_1 <- svydesign(ids = ~1, data = Ye_1, weights = Ye_1$weight01)
+#Ye_2 <- svydesign(ids = ~1, data = Ye_2, weights = Ye_2$weight02)
+
 #percentage compared to paper 
-prop.table(svytable(~population+budget, design=Ye_1),2)
-prop.table(svytable(~population+budget, design=Ye_2),2)
-prop.table(svytable(~governance_type+budget, design=Ye_1),2)
-prop.table(svytable(~governance_type+budget, design=Ye_2),2)
-prop.table(svytable(~total_exp+budget, design=Ye_1),2)
-prop.table(svytable(~per_capita_exp_cat+budget, design=Ye_1),2)
+#prop.table(svytable(~population+budget, design=Ye_1),2)
+#prop.table(svytable(~population+budget, design=Ye_2),2)
+#prop.table(svytable(~governance_type+budget, design=Ye_1),2)
+#prop.table(svytable(~governance_type+budget, design=Ye_2),2)
+#prop.table(svytable(~total_exp+budget, design=Ye_1),2)
+#prop.table(svytable(~per_capita_exp_cat+budget, design=Ye_1),2)
 #prop.table(svytable(~per_capita_exp+budget, design=Ye_1),2)
+
 #for BOH, NA is included in denominator when calculating percentage
-prop.table(svytable(~addNA(BOH_0)+addNA(budget),  exclude=NULL, na.action=na.pass ,design=Ye_1),2)
-prop.table(svytable(~addNA(BOH_1)+addNA(budget),  exclude=NULL, na.action=na.pass ,design=Ye_1),2)
-prop.table(svytable(~addNA(BOH_2)+addNA(budget),  exclude=NULL, na.action=na.pass ,design=Ye_1),2)
-prop.table(svytable(~addNA(BOH_9)+addNA(budget),  exclude=NULL, na.action=na.pass ,design=Ye_1),2)
-prop.table(svytable(~addNA(governance_type)+addNA(budget),  exclude=NULL, na.action=na.pass ,design=Ye_1),2)
+#prop.table(svytable(~addNA(BOH_0)+addNA(budget),  exclude=NULL, na.action=na.pass ,design=Ye_1),2)
+#prop.table(svytable(~addNA(BOH_1)+addNA(budget),  exclude=NULL, na.action=na.pass ,design=Ye_1),2)
+#prop.table(svytable(~addNA(BOH_2)+addNA(budget),  exclude=NULL, na.action=na.pass ,design=Ye_1),2)
+#prop.table(svytable(~addNA(BOH_9)+addNA(budget),  exclude=NULL, na.action=na.pass ,design=Ye_1),2)
+#prop.table(svytable(~addNA(governance_type)+addNA(budget),  exclude=NULL, na.action=na.pass ,design=Ye_1),2)
 #?
-prop.table(svytable(~addNA(total_exp)+addNA(budget),  exclude=NULL, na.action=na.pass ,design=Ye_1),2)
+#prop.table(svytable(~addNA(total_exp)+addNA(budget),  exclude=NULL, na.action=na.pass ,design=Ye_1),2)
 # this is close to the table in paper
 # prop.table(table(Ye_1$BOH_1, Ye_1$budget, useNA = c("always")),2)
 
@@ -102,14 +103,14 @@ prop.table(svytable(~addNA(total_exp)+addNA(budget),  exclude=NULL, na.action=na
 library(questionr)
 Ye_1 <- subset(Ye,is.na(Ye$budget)==F)
 wtd.mean(Ye_1$localrev[Ye_1$budget=="with budget cuts"],
-         weights=Ye_1$weights02,
+         weights=Ye_1$weights01,
          normwt="ignored",
          na.rm=T)
 
 wtd.mean(Ye_1$localrev[Ye_1$budget=="without budget cuts"], 
-          weights=Ye_1$weights01,
-          normwt="ignored",
-          na.rm=T)
+         weights=Ye_1$weights01,
+         normwt="ignored",
+         na.rm=T)
 
 wtd.mean(Ye_1$Medicaidrev[Ye_1$budget=="with budget cuts"],
          weights=Ye_1$weights01,
@@ -131,7 +132,6 @@ wtd.mean(Ye_1$Federalrev[Ye_1$budget=="without budget cuts"],
          normwt="ignored",
          na.rm=T)
 
-#model 1 logistic regression
 
 #subset data to exclude NAs, n=1874#
 Ye_1<-subset(Ye, 
@@ -141,12 +141,45 @@ Ye_1<-subset(Ye,
 
 #relevel budget#
 Ye_1$budget <- relevel(Ye_1$budget, ref="without budget cuts")
+#relevel remaining variables
+Ye_1$governance_type <- factor(Ye_1$governance_type, levels = c("state","local"," shared"))
+Ye_1$population <- factor(Ye_1$population, levels = c("<25000","25000-49999","50000-99999","100000-499999","500000+"))
+Ye_1$population <- relevel(Ye_1$population, ref="<25000")
+Ye_1$BOH_0 <- factor(Ye_1$BOH_0, levels = c("no","yes"))
+Ye_1$BOH_1 <- factor(Ye_1$BOH_1, levels = c("unchecked","checked"))
+Ye_1$BOH_2 <- factor(Ye_1$BOH_2, levels = c("unchecked","checked"))
+Ye_1$BOH_3 <- factor(Ye_1$BOH_3, levels = c("unchecked","checked"))
+Ye_1$BOH_4 <- factor(Ye_1$BOH_4, levels = c("unchecked","checked"))
+Ye_1$BOH_5 <- factor(Ye_1$BOH_5, levels = c("unchecked","checked"))
+Ye_1$BOH_6 <- factor(Ye_1$BOH_6, levels = c("unchecked","checked"))
+Ye_1$BOH_7 <- factor(Ye_1$BOH_7, levels = c("unchecked","checked"))
+Ye_1$BOH_8 <- factor(Ye_1$BOH_8, levels = c("unchecked","checked"))
+Ye_1$BOH_9 <- factor(Ye_1$BOH_9, levels = c("unchecked","checked"))
+
+Ye_1$BOH_1[is.na(Ye_1$BOH_1)] <- "unchecked"
+Ye_1$BOH_2[is.na(Ye_1$BOH_2)] <- "unchecked"
+Ye_1$BOH_3[is.na(Ye_1$BOH_3)] <- "unchecked"
+Ye_1$BOH_4[is.na(Ye_1$BOH_4)] <- "unchecked"
+Ye_1$BOH_5[is.na(Ye_1$BOH_5)] <- "unchecked"
+Ye_1$BOH_6[is.na(Ye_1$BOH_6)] <- "unchecked"
+Ye_1$BOH_7[is.na(Ye_1$BOH_7)] <- "unchecked"
+Ye_1$BOH_8[is.na(Ye_1$BOH_8)] <- "unchecked"
+Ye_1$BOH_9[is.na(Ye_1$BOH_9)] <- "unchecked"
 
 #logistic regression
 library(stats)
-model1 <- glm(budget ~ population + governance_type + BOH_0 + BOH_1 + BOH_2 + BOH_3 + BOH_4 + BOH_5 + BOH_6 + BOH_7 + BOH_8 + BOH_9,
+model1 <- glm(budget ~ population + governance_type  + BOH_0+ BOH_1 + BOH_2 + BOH_3 + BOH_4 + BOH_5 + BOH_6 + BOH_7 + BOH_8 + BOH_9,
               data=Ye_1, family="binomial", 
-              weights=Ye_1$weights02,
+              weights=Ye_1$weights01,
               na.action="na.omit")
+
+
 summary(model1)
+
+model2 <- glm(budget ~ BOH_0, 
+              data = Ye_1,
+              family = "binomial",
+              weights = Ye_1$weight01,
+              na.action="na.omit")
+summary(model2)
 exp(cbind(OR=coef(model1), confint(model1)))
