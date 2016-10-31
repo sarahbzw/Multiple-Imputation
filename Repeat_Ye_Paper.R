@@ -191,3 +191,6 @@ model2 <- glm(budget ~ population + governance_type  + BOH_0+ BOH_1 + BOH_2 + BO
 
 summary(model2)
 exp(cbind(OR=coef(model2), confint(model2)))
+
+#Multiple Imputation
+#auxillary variables (from Dr. Harris) = staff size (FTE), education of exec, rural/urban/etc, revenue
