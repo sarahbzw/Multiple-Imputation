@@ -173,13 +173,20 @@ model1 <- glm(budget ~ population + governance_type  + BOH_0+ BOH_1 + BOH_2 + BO
               weights=Ye_1$weights01,
               na.action="na.omit")
 
-
 summary(model1)
+exp(cbind(OR=coef(model1), confint(model1)))
 
-model2 <- glm(budget ~ BOH_0, 
+#relevel total exp, per capita exp#
+Ye_1$total_exp <- relevel(Ye_1$total_exp, ref="<$500000")
+Ye_1$per_capita_exp_cat <- relevel(Ye_1$per_capita_exp_cat, ref="<$20")
+
+#model 2 logistic regression
+model2 <- glm(budget ~ population + governance_type  + BOH_0+ BOH_1 + BOH_2 + BOH_3 + BOH_4 + BOH_5 + BOH_6 + BOH_7 + BOH_8 + BOH_9 +
+              total_exp + per_capita_exp_cat + localrev + Medicaidrev + Federalrev,
               data = Ye_1,
               family = "binomial",
               weights = Ye_1$weight01,
               na.action="na.omit")
+
 summary(model2)
-exp(cbind(OR=coef(model1), confint(model1)))
+exp(cbind(OR=coef(model2), confint(model2)))
