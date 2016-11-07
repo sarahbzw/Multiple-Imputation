@@ -191,3 +191,49 @@ model2 <- glm(budget ~ population + governance_type  + BOH_0+ BOH_1 + BOH_2 + BO
 
 summary(model2)
 exp(cbind(OR=coef(model2), confint(model2)))
+
+#checking assumption of the models
+#multicolinearity (want sqrt of VIF<2)
+sqrt(vif(model1)) #BOH_0 and BOH_8 >2 
+sqrt(vif(model2))  #population, BOH_0, BOH_8, total exp >2
+
+#remove BOH_0 from model 1
+model1a <- glm(budget ~ population + governance_type + BOH_1 + BOH_2 + BOH_3 + BOH_4 + BOH_5 + BOH_6 + BOH_7 + BOH_8 + BOH_9,
+              data=Ye_1, family="binomial", 
+              weights=Ye_1$weight01,
+              na.action="na.omit")
+sqrt(vif(model1a)) #all variables<2
+
+#remove BOH_0, total_exp (BOH_8 still >2); also removed BOH_8
+model2a <- glm(budget ~ population + governance_type + BOH_1 + BOH_2 + BOH_3 + BOH_4 + BOH_5 + BOH_6 + BOH_7 + BOH_9 + 
+              per_capita_exp_cat + localrev + Medicaidrev + Federalrev,
+              data = Ye_1, weights = weight02,
+              family = "binomial",
+              na.action="na.omit")
+
+sqrt(vif(model2a)) #all variables <2
+
+#re-do logistic regression analysis
+summary(model1a)
+exp(cbind(OR=coef(model1a), confint(model1a)))
+
+summary(model2a)
+exp(cbind(OR=coef(model2a), confint(model2a)))
+
+##MULTIPLE IMPUTATION##
+#add in auxillary variables to Ye_1#
+#FTE - c5q36
+#education of exec - c4q31a-c,c4q32a, 
+#rural/urban/etc - ?
+#revenue - c3q16
+
+
+#look at missing data 
+library(mice)
+md.pattern(Ye_1) #1164 with no missing data
+
+library(VIM)
+mice_plot <- aggr(Ye_1, col=c('navyblue','yellow'),
+                  numbers=TRUE, sortVars=TRUE,
+                  labels=names(Ye_1), cex.axis=.7,
+                  gap=3, ylab=c("Missing data","Pattern"))
