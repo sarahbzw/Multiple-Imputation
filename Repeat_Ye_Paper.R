@@ -57,49 +57,49 @@ Ye$per_capita_exp_cat[Ye$per_capita_exp<=44.99&Ye$per_capita_exp>=35] <- "$35-$4
 Ye$per_capita_exp_cat[Ye$per_capita_exp<=54.99&Ye$per_capita_exp>=45] <- "$45-$54.99"
 Ye$per_capita_exp_cat[Ye$per_capita_exp>=55] <- '$55+'
 
-
 #recode mean% revenues 
-Ye$localrev <- profile2013_core$c3q17p/profile2013_core$c3q16*100
-Ye$Medicaidrev<-profile2013_core$c3q17r/profile2013_core$c3q16*100
-Ye$Federalrev<-profile2013_core$c3q17qe/profile2013_core$c3q16*100
+Ye$localrev <- profile2013_core$c3q17p/profile2013_core$c3q16 * 100
+Ye$Medicaidrev<-profile2013_core$c3q17r/profile2013_core$c3q16 * 100
+Ye$Federalrev<-profile2013_core$c3q17qe/profile2013_core$c3q16 * 100
+
+#FTE (full-time equivalents workforce at the LHD)
+Ye$FTE <- profile2013_core$c5q37
+
+#Total Revenues
+#Ye$total_revenue <- profile2013_core$c3q16
+
+-#include identifier variable
+-Ye$lhdID<-profile2013_core$nacchoid
+
+#highest degree of top execitive
+Ye$degree[(profile2013_core$c4q31a=='checked'|profile2013_core$c4q31b=='checked'|
+             profile2013_core$c4q31c=='checked'|profile2013_core$c4q32a=='checked'|
+             profile2013_core$c4q32b=='checked'|profile2013_core$c4q32c=='checked'|
+             profile2013_core$c4q32d=='checked')==TRUE] <- 'Under Masters Degree'
+
+Ye$degree[(profile2013_core$c4q33e=='checked'|profile2013_core$c4q33f=='checked'|
+             profile2013_core$c4q33a=='checked'|profile2013_core$c4q33b=='checked'|
+             profile2013_core$c4q33c=='checked'|profile2013_core$c4q33d=='checked')==TRUE] <- 'Masters Degree'
+
+Ye$degree[(profile2013_core$c4q34a=='checked'|profile2013_core$c4q34b=='checked'|
+             profile2013_core$c4q34c=='checked'|profile2013_core$c4q34d=='checked'|
+             profile2013_core$c4q34e=='checked'|profile2013_core$c4q34f=='checked'|
+             profile2013_core$c4q34g=='checked'|profile2013_core$c4q34h=='checked'|
+             profile2013_core$c4q34i=='checked')==TRUE] <- 'Doctoral Degree'
+
+#include identifier variable
+Ye$lhdID<-profile2013_core$nacchoid
 
 #recode weight variable
 Ye$weight01 <- profile2013_core$c0coreweight_s
 Ye$weight02 <- profile2013_core$c0coreweight_p
 
-#include identifier variable
-Ye$lhdID<-profile2013_core$nacchoid
+
 
 #set as data frame
 Ye <- as.data.frame(Ye)
 
-#subset non-missing in weight
-Ye_1 <- subset(Ye,is.na(Ye$weight01)==F)
-Ye_2 <- subset(Ye,is.na(Ye$weight02)==F)
 
-#weight
-library(survey)
-Ye_1 <- svydesign(ids = ~1, data = Ye_1, weights = Ye_1$weight01)
-Ye_2 <- svydesign(ids = ~1, data = Ye_2, weights = Ye_2$weight02)
-
-#percentage compared to paper 
-prop.table(svytable(~population+budget, design=Ye_1),2)
-prop.table(svytable(~population+budget, design=Ye_2),2)
-prop.table(svytable(~governance_type+budget, design=Ye_1),2)
-prop.table(svytable(~governance_type+budget, design=Ye_2),2)
-prop.table(svytable(~total_exp+budget, design=Ye_1),2)
-prop.table(svytable(~per_capita_exp_cat+budget, design=Ye_1),2)
-#prop.table(svytable(~per_capita_exp+budget, design=Ye_1),2)
-#for BOH, NA is included in denominator when calculating percentage
-prop.table(svytable(~addNA(BOH_0)+addNA(budget),  exclude=NULL, na.action=na.pass ,design=Ye_1),2)
-prop.table(svytable(~addNA(BOH_1)+addNA(budget),  exclude=NULL, na.action=na.pass ,design=Ye_1),2)
-prop.table(svytable(~addNA(BOH_2)+addNA(budget),  exclude=NULL, na.action=na.pass ,design=Ye_1),2)
-prop.table(svytable(~addNA(BOH_9)+addNA(budget),  exclude=NULL, na.action=na.pass ,design=Ye_1),2)
-prop.table(svytable(~addNA(governance_type)+addNA(budget),  exclude=NULL, na.action=na.pass ,design=Ye_1),2)
-#?
-prop.table(svytable(~addNA(total_exp)+addNA(budget),  exclude=NULL, na.action=na.pass ,design=Ye_1),2)
-# this is close to the table in paper
-# prop.table(table(Ye_1$BOH_1, Ye_1$budget, useNA = c("always")),2)
 
 #means compared to paper
 library(questionr)
@@ -110,9 +110,9 @@ wtd.mean(Ye_1$localrev[Ye_1$budget=="with budget cuts"],
          na.rm=T)
 
 wtd.mean(Ye_1$localrev[Ye_1$budget=="without budget cuts"], 
-          weights=Ye_1$weights01,
-          normwt="ignored",
-          na.rm=T)
+         weights=Ye_1$weights01,
+         normwt="ignored",
+         na.rm=T)
 
 wtd.mean(Ye_1$Medicaidrev[Ye_1$budget=="with budget cuts"],
          weights=Ye_1$weights01,
@@ -134,7 +134,6 @@ wtd.mean(Ye_1$Federalrev[Ye_1$budget=="without budget cuts"],
          normwt="ignored",
          na.rm=T)
 
-##TABLE 4 - Model 1##
 
 #subset data to exclude NAs, n=1874#
 Ye_1<-subset(Ye, 
@@ -142,10 +141,8 @@ Ye_1<-subset(Ye,
                  is.na(Ye$governance_type)|
                  is.na(Ye$BOH_0)))
 
-
 #relevel budget#
 Ye_1$budget <- relevel(Ye_1$budget, ref="without budget cuts")
-
 #relevel remaining variables
 Ye_1$governance_type <- factor(Ye_1$governance_type, levels = c("state","local"," shared"))
 Ye_1$population <- factor(Ye_1$population, levels = c("<25000","25000-49999","50000-99999","100000-499999","500000+"))
@@ -160,6 +157,8 @@ Ye_1$BOH_6 <- factor(Ye_1$BOH_6, levels = c("unchecked","checked"))
 Ye_1$BOH_7 <- factor(Ye_1$BOH_7, levels = c("unchecked","checked"))
 Ye_1$BOH_8 <- factor(Ye_1$BOH_8, levels = c("unchecked","checked"))
 Ye_1$BOH_9 <- factor(Ye_1$BOH_9, levels = c("unchecked","checked"))
+Ye_1$total_exp <- factor(Ye_1$total_exp, levels = c("<$500000","$500000-$999999","$1000000-$4999999","$5000000-$9999999","$10000000+"))
+Ye_1$per_capita_exp_cat <- factor(Ye_1$per_capita_exp_cat, levels = c("<$20","$20-$34.99","$35-$44.99","$45-$54.99","$55+"))
 
 Ye_1$BOH_1[is.na(Ye_1$BOH_1)] <- "unchecked"
 Ye_1$BOH_2[is.na(Ye_1$BOH_2)] <- "unchecked"
@@ -170,6 +169,8 @@ Ye_1$BOH_6[is.na(Ye_1$BOH_6)] <- "unchecked"
 Ye_1$BOH_7[is.na(Ye_1$BOH_7)] <- "unchecked"
 Ye_1$BOH_8[is.na(Ye_1$BOH_8)] <- "unchecked"
 Ye_1$BOH_9[is.na(Ye_1$BOH_9)] <- "unchecked"
+
+
 
 #logistic regression
 library(stats)
