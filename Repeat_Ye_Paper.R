@@ -67,6 +67,9 @@ Ye$Federalrev<-profile2013_core$c3q17qe/profile2013_core$c3q16*100
 Ye$weight01 <- profile2013_core$c0coreweight_s
 Ye$weight02 <- profile2013_core$c0coreweight_p
 
+#include identifier variable
+Ye$lhdID<-profile2013_core$nacchoid
+
 #set as data frame
 Ye <- as.data.frame(Ye)
 
@@ -170,7 +173,7 @@ Ye_1$BOH_9[is.na(Ye_1$BOH_9)] <- "unchecked"
 
 #logistic regression
 library(stats)
-model1 <- glm(budget ~ population + governance_type  + BOH_0+ BOH_1 + BOH_2 + BOH_3 + BOH_4 + BOH_5 + BOH_6 + BOH_7 + BOH_8 + BOH_9,
+model1 <- glm(budget ~ population + governance_type + BOH_0+ BOH_1 + BOH_2 + BOH_3 + BOH_4 + BOH_5 + BOH_6 + BOH_7 + BOH_8 + BOH_9,
               data=Ye_1, family="binomial", 
               weights=Ye_1$weight01,
               na.action="na.omit")
@@ -191,3 +194,77 @@ model2 <- glm(budget ~ population + governance_type  + BOH_0+ BOH_1 + BOH_2 + BO
 
 summary(model2)
 exp(cbind(OR=coef(model2), confint(model2)))
+
+
+##model fit/precent predicted
+library(descr)
+x <- predict(model1a, newdata=Ye_1, type="response")
+Ye_1$pred1a <- factor(1*(x > .5), labels=c("No", "Yes"))
+CrossTable(Ye_1$budget,Ye_1$pred1a, expected=F, prop.chisq=F, sresid=F, prop.r=T, prop.c=F, prop.t=F)
+
+y <- predict(model2a, newdata=Ye_1, type="response")
+Ye_1$pred2a <- factor(1*(x > .5), labels=c("No", "Yes"))
+CrossTable(Ye_1$budget,Ye_1$pred2a, expected=F, prop.chisq=F, sresid=F, prop.r=T, prop.c=F, prop.t=F)
+
+##CHECKING ASSUMPTIONS OF MODEL##
+##multicolinearity (want sqrt of VIF<2)
+sqrt(vif(model1)) #BOH_0 and BOH_8 >2 
+sqrt(vif(model2))  #population, BOH_0, BOH_8, total exp >2
+
+#remove BOH_0, BOH_8 and total_exp from model 1 and model 2
+model1a <- glm(budget ~ population + governance_type + BOH_1 + BOH_2 + BOH_3 + BOH_4 + BOH_5 + BOH_6 + BOH_7 + BOH_9,
+              data=Ye_1, family="binomial", 
+              weights=Ye_1$weight01,
+              na.action="na.omit")
+sqrt(vif(model1a)) #all variables<2
+
+model2a <- glm(budget ~ population + governance_type + BOH_1 + BOH_2 + BOH_3 + BOH_4 + BOH_5 + BOH_6 + BOH_7 + BOH_9 + 
+              per_capita_exp_cat + localrev + Medicaidrev + Federalrev,
+              data = Ye_1, weights = weight02,
+              family = "binomial",
+              na.action="na.omit")
+
+sqrt(vif(model2a)) #all variables <2
+
+##likelihood ratio test
+#model 1a
+model1aChi<-model1a$null.deviance - model1a$deviance
+chidf1a <-model1a$df.null - model1a$df.residual
+chisq.prob1a <- 1 - pchisq(model1aChi, chidf1a)
+model1aChi
+chidf1a
+chisq.prob1a  #better than baseline
+
+#model 2a
+
+model2aChi<-model2a$null.deviance - model2a$deviance
+chidf2a <-model2a$df.null - model2a$df.residual
+chisq.prob2a <- 1 - pchisq(model2aChi, chidf2a)
+model2aChi
+chidf2a
+chisq.prob2a  #better than baseline
+
+#compare model 1a and 2a
+
+modelLRChi<-model1a$null.deviance - model2a$deviance
+LRdf <-model1a$df.null - model2a$df.residual
+chisq.prob <- 1 - pchisq(modelLRChi, LRdf)
+modelLRChi
+LRdf
+chisq.prob #model 2a better than 1a
+
+##linearity for continuous predictors - start with localrev
+Ye_1$localrevlogint<-log(Ye_1$localrev)*Ye_1$localrev
+
+model2a1 <- glm(budget ~ population + governance_type + 
+                  BOH_1 + BOH_2 + BOH_3 + BOH_4 + BOH_5 + BOH_6 + BOH_7 + BOH_9 +
+                  per_capita_exp_cat + localrev + Medicaidrev + Federalrev +
+                  localrevlogint,
+               data=Ye_1, family="binomial", 
+               weights=Ye_1$weight01,
+               na.action="na.omit")
+summary(model2a1) #assumption not met
+
+#durbin-watson for correlated residuals (non-sig meets assumption)
+Ye_1$standardres1a<-rstandard(model1a)
+plot(Ye_1$lhdID, Ye_1$standardres1a)  #assumption met?
