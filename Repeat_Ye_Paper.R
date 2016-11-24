@@ -1,5 +1,4 @@
 library(foreign)
-
 profile2013 <- read.spss(file.choose(),to.data.frame = T)
 core <- grepl('^c',names(profile2013), ignore.case = T)
 core[1] <- T
@@ -66,10 +65,7 @@ Ye$Federalrev<-profile2013_core$c3q17qe/profile2013_core$c3q16 * 100
 Ye$FTE <- profile2013_core$c5q37
 
 #Total Revenues
-#Ye$total_revenue <- profile2013_core$c3q16
-
--#include identifier variable
--Ye$lhdID<-profile2013_core$nacchoid
+#Ye$total_rev <- profile2013_core$c3q16
 
 #highest degree of top execitive
 Ye$degree[(profile2013_core$c4q31a=='checked'|profile2013_core$c4q31b=='checked'|
@@ -87,50 +83,43 @@ Ye$degree[(profile2013_core$c4q34a=='checked'|profile2013_core$c4q34b=='checked'
              profile2013_core$c4q34g=='checked'|profile2013_core$c4q34h=='checked'|
              profile2013_core$c4q34i=='checked')==TRUE] <- 'Doctoral Degree'
 
-#include identifier variable
-Ye$lhdID<-profile2013_core$nacchoid
-
 #recode weight variable
 Ye$weight01 <- profile2013_core$c0coreweight_s
 Ye$weight02 <- profile2013_core$c0coreweight_p
 
-
-
 #set as data frame
 Ye <- as.data.frame(Ye)
-
-
 
 #means compared to paper
 library(questionr)
 Ye_1 <- subset(Ye,is.na(Ye$budget)==F)
 wtd.mean(Ye_1$localrev[Ye_1$budget=="with budget cuts"],
-         weights=Ye_1$weights01,
+         weights=Ye_1$weight01[Ye_1$budget=="with budget cuts"],
          normwt="ignored",
          na.rm=T)
 
 wtd.mean(Ye_1$localrev[Ye_1$budget=="without budget cuts"], 
-         weights=Ye_1$weights01,
+         weights=Ye_1$weight01[Ye_1$budget=="without budget cuts"],
          normwt="ignored",
          na.rm=T)
 
 wtd.mean(Ye_1$Medicaidrev[Ye_1$budget=="with budget cuts"],
-         weights=Ye_1$weights01,
+         weights=Ye_1$weight01[Ye_1$budget=="with budget cuts"],
          normwt="ignored",
          na.rm=T)
 
 wtd.mean(Ye_1$Medicaidrev[Ye_1$budget=="without budget cuts"], 
-         weights=Ye_1$weights01,
+         weights=Ye_1$weight01[Ye_1$budget=="without budget cuts"],
          normwt="ignored",
          na.rm=T)
 
 wtd.mean(Ye_1$Federalrev[Ye_1$budget=="with budget cuts"],
-         weights=Ye_1$weights01,
+         weights=Ye_1$weight01[Ye_1$budget=="with budget cuts"],
          normwt="ignored",
          na.rm=T)
 
 wtd.mean(Ye_1$Federalrev[Ye_1$budget=="without budget cuts"], 
-         weights=Ye_1$weights01,
+         weights=Ye_1$weight01[Ye_1$budget=="without budget cuts"],
          normwt="ignored",
          na.rm=T)
 
@@ -170,13 +159,11 @@ Ye_1$BOH_7[is.na(Ye_1$BOH_7)] <- "unchecked"
 Ye_1$BOH_8[is.na(Ye_1$BOH_8)] <- "unchecked"
 Ye_1$BOH_9[is.na(Ye_1$BOH_9)] <- "unchecked"
 
-
-
 #logistic regression
 library(stats)
 model1 <- glm(budget ~ population + governance_type + BOH_0+ BOH_1 + BOH_2 + BOH_3 + BOH_4 + BOH_5 + BOH_6 + BOH_7 + BOH_8 + BOH_9,
-              data=Ye_1, family="binomial", 
-              weights=Ye_1$weight01,
+              data=Ye_1, weights = weight01,
+              family="binomial",
               na.action="na.omit")
 
 summary(model1)
@@ -188,14 +175,65 @@ Ye_1$per_capita_exp_cat <- relevel(Ye_1$per_capita_exp_cat, ref="<$20")
 
 #model 2 logistic regression
 model2 <- glm(budget ~ population + governance_type  + BOH_0+ BOH_1 + BOH_2 + BOH_3 + BOH_4 + BOH_5 + BOH_6 + BOH_7 + BOH_8 + BOH_9 +
-              total_exp + per_capita_exp_cat + localrev + Medicaidrev + Federalrev,
-              data = Ye_1, weights = weight02,
+                total_exp + per_capita_exp_cat + localrev + Medicaidrev + Federalrev,
+              data = Ye_1, weights = weight01,
               family = "binomial",
               na.action="na.omit")
 
 summary(model2)
 exp(cbind(OR=coef(model2), confint(model2)))
 
+##MULTIPLE IMPUTATION##
+
+#look at missing data 
+library(mice)
+md.pattern(Ye_1) #1164 with no missing data
+
+#impute missing data using MICE
+library(mice)
+mi_Ye <- mice(Ye_1, m=5)
+summary(imputed_Data)
+
+#build predictive model
+
+modelfit1a <- with(mi_Ye, glm(budget ~ population + governance_type +  BOH_1 + BOH_2 + BOH_3 + BOH_4 + BOH_5 + BOH_6 + BOH_7 + BOH_9, 
+                              family="binomial",
+                              weights=Ye_1$weight01,
+                              na.action="na.omit"))
+print(pool(modelfit1a))
+summary(pool(modelfit1a)) #no missing data, so no change in results 
+
+modelfit2a <- with(mi_Ye, glm(budget ~ population + governance_type +  BOH_1 + BOH_2 + BOH_3 + BOH_4 + BOH_5 + BOH_6 + BOH_7 + BOH_9
+                            + per_capita_exp_cat + localrev + Medicaidrev + Federalrev, 
+                            family="binomial",
+                            weights=Ye_1$weight01,
+                            na.action="na.omit"))
+summary(pool(modelfit2a))
+
+
+##CHECKING ASSUMPTIONS OF MODEL##
+##multicolinearity (want sqrt of VIF<2)
+sqrt(vif(model1)) #BOH_0 and BOH_8 >2 
+sqrt(vif(model2))  #population, BOH_0, BOH_8, total exp >2
+
+#remove BOH_0, BOH_8 and total_exp from model 1 and model 2
+model1a <- glm(budget ~ population + governance_type + BOH_1 + BOH_2 + BOH_3 + BOH_4 + BOH_5 + BOH_6 + BOH_7 + BOH_9,
+               data=Ye_1, family="binomial", 
+               weights=Ye_1$weight01,
+               na.action="na.omit")
+sqrt(vif(model1a)) #all variables<2
+summary(model1a)
+exp(cbind(OR=coef(model1a), confint(model1a)))
+
+model2a <- glm(budget ~ population + governance_type + BOH_1 + BOH_2 + BOH_3 + BOH_4 + BOH_5 + BOH_6 + BOH_7 + BOH_9 + 
+                 per_capita_exp_cat + localrev + Medicaidrev + Federalrev,
+               data = Ye_1, weights = weight01,
+               family = "binomial",
+               na.action="na.omit")
+summary(model2a)
+exp(cbind(OR=coef(model2a), confint(model2a)))
+
+sqrt(vif(model2a)) #all variables <2
 
 ##model fit/precent predicted
 library(descr)
@@ -207,25 +245,6 @@ y <- predict(model2a, newdata=Ye_1, type="response")
 Ye_1$pred2a <- factor(1*(x > .5), labels=c("No", "Yes"))
 CrossTable(Ye_1$budget,Ye_1$pred2a, expected=F, prop.chisq=F, sresid=F, prop.r=T, prop.c=F, prop.t=F)
 
-##CHECKING ASSUMPTIONS OF MODEL##
-##multicolinearity (want sqrt of VIF<2)
-sqrt(vif(model1)) #BOH_0 and BOH_8 >2 
-sqrt(vif(model2))  #population, BOH_0, BOH_8, total exp >2
-
-#remove BOH_0, BOH_8 and total_exp from model 1 and model 2
-model1a <- glm(budget ~ population + governance_type + BOH_1 + BOH_2 + BOH_3 + BOH_4 + BOH_5 + BOH_6 + BOH_7 + BOH_9,
-              data=Ye_1, family="binomial", 
-              weights=Ye_1$weight01,
-              na.action="na.omit")
-sqrt(vif(model1a)) #all variables<2
-
-model2a <- glm(budget ~ population + governance_type + BOH_1 + BOH_2 + BOH_3 + BOH_4 + BOH_5 + BOH_6 + BOH_7 + BOH_9 + 
-              per_capita_exp_cat + localrev + Medicaidrev + Federalrev,
-              data = Ye_1, weights = weight02,
-              family = "binomial",
-              na.action="na.omit")
-
-sqrt(vif(model2a)) #all variables <2
 
 ##likelihood ratio test
 #model 1a
@@ -261,11 +280,40 @@ model2a1 <- glm(budget ~ population + governance_type +
                   BOH_1 + BOH_2 + BOH_3 + BOH_4 + BOH_5 + BOH_6 + BOH_7 + BOH_9 +
                   per_capita_exp_cat + localrev + Medicaidrev + Federalrev +
                   localrevlogint,
-               data=Ye_1, family="binomial", 
-               weights=Ye_1$weight01,
-               na.action="na.omit")
+                data=Ye_1, family="binomial", 
+                weights=Ye_1$weight01,
+                na.action="na.omit")
 summary(model2a1) #assumption not met
 
-#durbin-watson for correlated residuals (non-sig meets assumption)
+Ye_1$Medicaidrevlogint<-log(Ye_1$Medicaidrev)*Ye_1$Medicaidrev
+
+model2a2 <- glm(budget ~ population + governance_type + 
+                  BOH_1 + BOH_2 + BOH_3 + BOH_4 + BOH_5 + BOH_6 + BOH_7 + BOH_9 +
+                  per_capita_exp_cat + localrev + Medicaidrev + Federalrev +
+                  Medicaidrevlogint,
+                data=Ye_1, family="binomial", 
+                weights=Ye_1$weight01,
+                na.action="na.omit")
+summary(model2a2) #assumption met
+
+Ye_1$Federalrevlogint<-log(Ye_1$Federalrev)*Ye_1$Federalrev
+
+model2a3 <- glm(budget ~ population + governance_type + 
+                  BOH_1 + BOH_2 + BOH_3 + BOH_4 + BOH_5 + BOH_6 + BOH_7 + BOH_9 +
+                  per_capita_exp_cat + localrev + Medicaidrev + Federalrev +
+                  Federalrevlogint,
+                data=Ye_1, family="binomial", 
+                weights=Ye_1$weight01,
+                na.action="na.omit")
+summary(model2a3) #assumption not met
+
+#durbin-watson for correlated residuals
+#include identifier variable
+Ye$lhdID<-profile2013_core$nacchoid
+Ye<-subset(Ye, 
+             !(is.na(Ye$budget)|
+                 is.na(Ye$governance_type)|
+                 is.na(Ye$BOH_0)))
+Ye_1$lhdID<-Ye$lhdID
 Ye_1$standardres1a<-rstandard(model1a)
-plot(Ye_1$lhdID, Ye_1$standardres1a)  #assumption met?
+plot(Ye_1$lhdID, Ye_1$standardres1a)  #assumption met
